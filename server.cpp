@@ -54,7 +54,7 @@ string Type (string path)
 	else
 	{
 		//just put it as html to see what happens if it isn't one of the others
-		output="text/html";
+		output="ERROR";
 	}
 	return output;
 }
@@ -75,26 +75,21 @@ long Length(string path)
 //Make an index file html doc
 string MakeIndex(string root, string path)
 {
-	string index = "<h1>" + path + " Index </h1><ul>";
+	string index = "<!DOCTYPE html><html><body><h1>Index</h1>";
 	int len;
 	DIR *dirp;
 	struct dirent *dp;
-	
 	dirp = opendir((root +path).c_str());
-	if (path != "/")
-	{
-		 path += "/";
-	}
+	if (path != "/") path += "/";
 	while ((dp = readdir(dirp)) != NULL)
 	{
 		string file = string(dp->d_name);
-		if(file != "." && file != "..")
-		{
-			index += "<li><a href='"+ path + file +"'>"+ file + "</li>";
+		if (file != "." && file !="..")
+		{ 	
+			index += "<p><a href='"+ path + file +"'>"+ file + "</a></p>";
 		}
 	}
-	index += "</ul>";
-	string output = "<!DOCTYPE html><html>" + index + "</html>";
+	string output =  index + "</html>";
 	(void)closedir(dirp);
 	return output;
 }
@@ -129,6 +124,7 @@ void Read_Write_Response(int hSocket)
 	//Does file exist, if not, produce error	
 	if(stat(_fullpath.c_str(), &filestat)!=0)
 	{
+		cout << "It was an errror" << endl;
 		string errorMessage = "<!DOCTYPE html>\n<html><head></head>\n<body><h1>404</h1><h3>File not found.</h3></body>\n</html>";
 		sprintf(pBuffer, "HTTP/1.1 404 Not Found\r\nContent-Type:text/html\r\nContent-Length:%ld\r\n\r\n", errorMessage.length());
 		write(hSocket, pBuffer, strlen(pBuffer));
@@ -141,6 +137,7 @@ void Read_Write_Response(int hSocket)
 		string indexpath= _fullpath + "/index.html";
 		if (stat(indexpath.c_str(), &filestat)==0)
 		{
+			cout << "It was an index" <<endl;
 			sprintf(path, "%s/index.html", path);
 			sprintf(fullpath, "%s/index.html", fullpath);
 			contentType = Type(path);
@@ -155,10 +152,11 @@ void Read_Write_Response(int hSocket)
 			fclose(fp);
 		}
 		else
-		{
-			cout << "Client requested a folder without an index." << endl;
+		{	
+			cout << "It has no index" << endl;
 			string index = MakeIndex(directorypath, path);
-			sprintf(pBuffer, "HTTP:/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld \r\n\r\n", index.length());
+			cout << "This is the index string: " + index << endl;	
+			sprintf(pBuffer, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %ld\r\n\r\n", index.length());
 			write(hSocket, pBuffer,strlen(pBuffer));
 			write(hSocket, index.c_str(), strlen(index.c_str()));
 		}
